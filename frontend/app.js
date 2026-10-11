@@ -27,9 +27,9 @@ function switchPage(pageId) {
   if (pageId === "p-dashboard") loadHealthData();
 }
 
-// 建立实时 WebSocket 连接
+const wsHost = window.location.host || "127.0.0.1:8099";
 const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
-const wsUrl = `${wsProto}//${window.location.host}/ws/live`;
+const wsUrl = `${wsProto}//${wsHost}/ws/live`;
 let liveSocket;
 
 function initWebSocket() {
@@ -230,6 +230,20 @@ async function downloadDiagnostics() {
 
 function triggerQuickCheck() {
   loadHealthData();
+}
+
+function showProbeSnippet() {
+  const host = window.location.host || "127.0.0.1:8099";
+  const code = `fetch('http://${host}/static/gate_agent_probe.js').then(r=>r.text()).then(eval);`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(() => {
+      alert("已成功复制 Gate 现场探针脚本！\n\n使用方式：\n请在已打开的 Gate 交易页面按下 F12 打开 Console，粘贴回车即可！");
+    }).catch(() => {
+      prompt("请复制以下探针代码到 Gate 交易页面控制台运行：", code);
+    });
+  } else {
+    prompt("请复制以下探针代码到 Gate 交易页面控制台运行：", code);
+  }
 }
 
 // 默认首屏加载

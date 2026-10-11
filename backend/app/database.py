@@ -185,6 +185,12 @@ class DatabaseManager:
             cursor.execute("PRAGMA temp_store=MEMORY;")
             cursor.execute("PRAGMA cache_size=-64000;") # 64MB cache
             cursor.executescript(CREATE_TABLES_SQL)
+            # 动态适配实盘字段
+            for col, col_type in [("call_price", "REAL"), ("put_price", "REAL"), ("b_ratio", "REAL"), ("target_price", "REAL")]:
+                try:
+                    cursor.execute(f"ALTER TABLE odds_tick ADD COLUMN {col} {col_type};")
+                except Exception:
+                    pass
             conn.commit()
             logger.info(f"SQLite WAL 数据库初始化成功: {self.db_path}")
         except Exception as e:

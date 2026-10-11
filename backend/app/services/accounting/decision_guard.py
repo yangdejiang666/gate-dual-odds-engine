@@ -8,7 +8,7 @@
 2. 跟随机制: 顺势延续与联动确认，冲突时信誉加权降级
 """
 
-from typing import Tuple
+from typing import Tuple, Any
 from backend.app.models.schemas import ActionEnum
 from backend.app.config import settings
 
@@ -17,11 +17,18 @@ class DecisionGuard:
         self.t_early = settings.T_EARLY_SEC
         self.t_cutoff = settings.T_CUTOFF_SEC
 
-    def check_timing_constraints(self, sec_offset: int, raw_action: ActionEnum) -> Tuple[ActionEnum, str]:
+    def check_timing_constraints(self, sec_offset: int, raw_action: Any = None, proposed_action: Any = None) -> Tuple[ActionEnum, str]:
         """
         检查局内秒偏移是否处于允许下单的安全时间窗 (第二十五章 25.2 节)
         """
-        if raw_action == ActionEnum.STAND_BY:
+        act = proposed_action if proposed_action is not None else raw_action
+        if isinstance(act, str):
+            try:
+                act = ActionEnum(act)
+            except Exception:
+                act = ActionEnum.STAND_BY
+
+        if act == ActionEnum.STAND_BY or act is None:
             return (ActionEnum.STAND_BY, "模型本身输出观望")
 
         # 1. 开局前 60 秒: 信息量不足，易被反转
@@ -32,6 +39,6 @@ class DecisionGuard:
         if sec_offset >= self.t_cutoff:
             return (ActionEnum.STAND_BY, f"临近结算 ({sec_offset}s >= {self.t_cutoff}s): 窗口关闭防滑点，停止出手")
 
-        return (raw_action, "处于黄金工作窗口 T_work")
+        return (act, "处于黄金工作窗口 T_work")
 
 decision_guard = DecisionGuard()

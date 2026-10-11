@@ -1,28 +1,42 @@
-# Gate 五分钟涨跌页面元素选择器与特征定义 (第四章)
-selector_version: "2026.10.11"
-check_anchor_text: "5M" # 页面锚点自检文本
+# Gate 5分钟涨跌真实页面选择器与特征定义 (v3.1 实盘增强版)
+selector_version: "2026.10.11_real"
+check_anchor_text: "5分钟涨或跌" # 真实页面锚点自检文本
 
+urls:
+  btc: "https://www.gate.com/zh/trade-events/btc-updown-5m"
+  eth: "https://www.gate.com/zh/trade-events/eth-updown-5m"
+
+# 真实页面字段选择器映射 (基于真实 Gate 页面结构)
 selectors:
   btc:
-    period_id: ".dual-period-header, .period-title, [data-testid='period-id']"
-    countdown_timer: ".countdown-display, .timer-text, .time-remain"
-    call_odds: ".call-odds-val, .up-multiplier, .btn-call .odds-num"
-    put_odds: ".put-odds-val, .down-multiplier, .btn-put .odds-num"
-    current_price: ".mark-price, .current-price-val, .index-price"
-    chart_element: "canvas.chart-canvas, svg.trend-path"
-    result_overlay: ".settle-result-modal, .result-tag"
+    title: "div:has-text('BTC 5分钟涨或跌'), .title-box"
+    period_time: ".period-time, span:has-text('14:'), .sub-header-time"
+    countdown_timer: ".countdown, [class*='countdown'], span:has-text('倒计时')"
+    target_price: "div:has-text('目标价格') + div, .target-price, [class*='targetPrice']"
+    current_price: "div:has-text('当前价格') + div, .current-price, [class*='currentPrice']"
+    price_diff: ".price-diff, [class*='priceDiff'], .diff-tag"
+    call_button: "div:has-text('看涨'), [class*='btn-call'], [class*='upBtn']"
+    put_button: "div:has-text('看跌'), [class*='btn-put'], [class*='downBtn']"
+    call_price: "[class*='callPrice'], .call-num, div:has-text('看涨') span"
+    put_price: "[class*='putPrice'], .put-num, div:has-text('看跌') span"
+    b_ratio: "span:has-text('B '), [class*='ratio-bar'], [class*='percent-text']"
+    chart_canvas: "canvas, .tv-lightweight-charts, svg"
 
   eth:
-    period_id: ".dual-period-header, .period-title, [data-testid='period-id']"
-    countdown_timer: ".countdown-display, .timer-text, .time-remain"
-    call_odds: ".call-odds-val, .up-multiplier, .btn-call .odds-num"
-    put_odds: ".put-odds-val, .down-multiplier, .btn-put .odds-num"
-    current_price: ".mark-price, .current-price-val, .index-price"
-    chart_element: "canvas.chart-canvas, svg.trend-path"
-    result_overlay: ".settle-result-modal, .result-tag"
+    title: "div:has-text('ETH 5分钟涨或跌'), .title-box"
+    period_time: ".period-time, span:has-text('14:'), .sub-header-time"
+    countdown_timer: ".countdown, [class*='countdown'], span:has-text('倒计时')"
+    target_price: "div:has-text('目标价格') + div, .target-price, [class*='targetPrice']"
+    current_price: "div:has-text('当前价格') + div, .current-price, [class*='currentPrice']"
+    price_diff: ".price-diff, [class*='priceDiff'], .diff-tag"
+    call_button: "div:has-text('看涨'), [class*='btn-call'], [class*='upBtn']"
+    put_button: "div:has-text('看跌'), [class*='btn-put'], [class*='downBtn']"
+    call_price: "[class*='callPrice'], .call-num, div:has-text('看涨') span"
+    put_price: "[class*='putPrice'], .put-num, div:has-text('看跌') span"
+    b_ratio: "span:has-text('B '), [class*='ratio-bar'], [class*='percent-text']"
+    chart_canvas: "canvas, .tv-lightweight-charts, svg"
 
 validation_rules:
-  min_valid_odds: 1.05
-  max_valid_odds: 4.50
-  max_odds_step_change: 0.80 # 单秒倍率异常突变上限校验
+  min_valid_share_price: 0.01
+  max_valid_share_price: 0.99
   max_countdown_sec: 305

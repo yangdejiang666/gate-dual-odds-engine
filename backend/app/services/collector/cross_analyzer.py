@@ -71,12 +71,17 @@ class CrossSymbolAnalyzer:
         # 3. 领先滞后秒数估计 (通过互相关 CCF 峰值)
         lead_secs = self._estimate_lead_lag(current_ticks, peer_ticks)
 
-        # 4. 判定联动状态 (第 14.3 节)
+        # 4. 盘口买方多空配比差与背离 (第二十四章)
+        cur_ratio = current_ticks[-1].get("b_ratio", 0.50) if current_ticks else 0.50
+        peer_ratio = peer_ticks[-1].get("b_ratio", 0.50) if peer_ticks else 0.50
+        order_ratio_diff = round(cur_ratio - peer_ratio, 4)
+
+        # 5. 判定联动状态 (第 14.3 节)
         if cross_same_dir_ratio >= 0.70 and abs(lead_secs) <= 5:
             state = CrossStateEnum.CO_DIRECTIONAL
         elif abs(lead_secs) > 5:
             state = CrossStateEnum.LEAD_LAG
-        elif cross_same_dir_ratio < 0.40:
+        elif cross_same_dir_ratio < 0.40 or abs(order_ratio_diff) >= 0.30:
             state = CrossStateEnum.DIVERGENT
         else:
             state = CrossStateEnum.UNKNOWN
@@ -87,6 +92,7 @@ class CrossSymbolAnalyzer:
             "cross_same_dir_ratio": round(cross_same_dir_ratio, 4),
             "cross_lead_secs": lead_secs,
             "cross_state": state.value,
+            "order_ratio_diff": order_ratio_diff,
             "peer_same_period_dir": peer_dir,
             "peer_same_period_bp": round(peer_return_bp, 2),
             "peer_prev_dir": peer_prev_direction or "UNKNOWN",

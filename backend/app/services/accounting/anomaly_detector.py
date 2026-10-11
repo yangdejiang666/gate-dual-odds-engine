@@ -8,7 +8,6 @@
 5. 隔离处理：默认从统计和模型训练中剔除，杜绝极端局污染规则胜率
 """
 
-import numpy as np
 from typing import Any, Optional
 
 class AnomalyDetector:

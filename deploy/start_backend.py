@@ -130,11 +130,29 @@ def run_standard_fallback_server(host: str, port: int):
                     "max_drawdown_pct": 5.8
                 })
                 return
+            elif path == "/api/ingest":
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length)
+                try:
+                    payload = json.loads(body.decode("utf-8"))
+                    from backend.app.services.engine.coordinator import engine_coordinator
+                    res = engine_coordinator.process_tick(payload)
+                    self.send_json({"status": "ok", "signal": res.get("signal", {})})
+                except Exception as e:
+                    self.send_json({"status": "error", "message": str(e)})
+                return
             elif path.startswith("/api/rules/") and path.endswith("/toggle"):
                 self.send_json({"status": "TOGGLED"})
                 return
 
             self.send_response(404)
+            self.end_headers()
+
+        def do_OPTIONS(self):
+            self.send_response(200)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "*")
             self.end_headers()
 
         def serve_file(self, filepath: Path, content_type: str):

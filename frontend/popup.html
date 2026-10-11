@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>Gate 决策置顶悬浮弹窗 (v3.0)</title>
+  <title>Gate 决策置顶悬浮弹窗 (v3.1 实盘增强版)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root {
@@ -30,8 +30,8 @@
       position: fixed;
       top: 20px;
       right: 20px;
-      width: 80px;
-      height: 80px;
+      width: 82px;
+      height: 82px;
       background: var(--bg-dark);
       border: 2px solid var(--accent-blue);
       border-radius: 50%;
@@ -44,47 +44,31 @@
       z-index: 99999;
       transition: transform 0.2s, border-color 0.2s;
     }
-    #float-ball:hover { transform: scale(1.05); }
-    #ball-timer { font-size: 15px; font-weight: bold; color: var(--text-main); }
-    #ball-signal { font-size: 12px; font-weight: bold; margin-top: 2px; }
+    #float-ball:hover { transform: scale(1.05); border-color: var(--accent-green); }
+    #ball-timer { font-size: 14px; font-weight: bold; color: var(--text-main); }
+    #ball-signal { font-size: 11px; font-weight: bold; margin-top: 2px; }
     .sig-call { color: var(--accent-green) !important; }
     .sig-put { color: var(--accent-red) !important; }
     .sig-standby { color: var(--accent-gray) !important; }
-    
-    /* 琥珀色自动验证长跑角标 */
-    #evolve-badge {
-      position: absolute;
-      top: -2px;
-      right: -2px;
-      width: 18px;
-      height: 18px;
-      background: var(--accent-amber);
-      border-radius: 50%;
-      border: 2px solid var(--bg-dark);
-      display: none;
-      animation: spin 3s linear infinite;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* 展开态卡片 (480x640 紧凑面板) */
+    /* 展开态卡片 (480x660 紧凑面板) */
     #popup-panel {
       position: fixed;
       top: 20px;
       right: 20px;
       width: 480px;
-      max-height: 640px;
+      max-height: 680px;
       background: var(--bg-dark);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.85);
       display: none;
       flex-direction: column;
       padding: 16px;
       z-index: 100000;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
     }
 
-    /* 顶部标题栏与模式 */
     .header-bar {
       display: flex;
       justify-content: space-between;
@@ -97,7 +81,7 @@
     .badge-tag { font-size: 10px; background: rgba(47,128,237,0.2); color: var(--accent-blue); padding: 2px 6px; border-radius: 4px; }
     .btn-minimize { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 16px; }
 
-    /* 倒计时与时间进度条 (带 T_early, T_cutoff 标线) */
+    /* 倒计时与 T_early / T_cutoff 标线 */
     .timing-container {
       background: var(--card-bg);
       padding: 10px;
@@ -110,54 +94,56 @@
     .progress-bar-bg {
       position: relative;
       width: 100%;
-      height: 10px;
+      height: 8px;
       background: #202b3a;
-      border-radius: 5px;
+      border-radius: 4px;
       overflow: visible;
     }
     .progress-bar-fill {
       height: 100%;
       background: var(--accent-blue);
-      border-radius: 5px;
+      border-radius: 4px;
       width: 60%;
       transition: width 0.3s;
     }
-    /* 标线: T_early (60s -> 20%) 和 T_cutoff (270s -> 90%) */
-    .marker-early { position: absolute; left: 20%; top: -3px; width: 2px; height: 16px; background: var(--accent-amber); }
-    .marker-cutoff { position: absolute; left: 90%; top: -3px; width: 2px; height: 16px; background: var(--accent-red); }
+    .marker-early { position: absolute; left: 20%; top: -3px; width: 2px; height: 14px; background: var(--accent-amber); }
+    .marker-cutoff { position: absolute; left: 90%; top: -3px; width: 2px; height: 14px; background: var(--accent-red); }
     .timing-legend { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-sub); margin-top: 6px; }
 
-    /* 双标的 mini 走势 */
-    .mini-charts {
+    /* BTC 与 ETH 双标的真实盘面对照 */
+    .dual-cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 12px;
     }
-    .mini-card {
+    .sym-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 8px;
-      padding: 8px;
+      padding: 10px;
     }
-    .mini-title { font-size: 11px; color: var(--text-sub); display: flex; justify-content: space-between; margin-bottom: 4px; }
-    .mini-diff { font-size: 13px; font-weight: bold; }
+    .sym-title { font-size: 12px; font-weight: bold; color: var(--text-main); display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .sym-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sub); margin-bottom: 3px; }
+    .sym-val { color: var(--text-main); font-weight: 500; }
+    .sym-ratio-bar { height: 4px; background: rgba(255,59,105,0.4); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+    .sym-ratio-fill { height: 100%; background: var(--accent-green); width: 68%; }
 
     /* 预测结论大卡片 */
     .signal-card {
       background: var(--card-bg);
-      border: 2px solid var(--card-border);
+      border: 2px solid var(--accent-green);
       border-radius: 10px;
-      padding: 14px;
+      padding: 12px;
       text-align: center;
       margin-bottom: 12px;
       transition: border-color 0.3s;
     }
-    .signal-action { font-size: 26px; font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; }
-    .signal-conf { font-size: 13px; color: var(--text-sub); }
+    .signal-action { font-size: 26px; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; }
+    .signal-conf { font-size: 12px; color: var(--text-sub); }
     .signal-conf span { color: var(--text-main); font-weight: bold; }
 
-    /* 依据与状态 */
+    /* 依据与联动状态 */
     .basis-box {
       background: var(--card-bg);
       border-radius: 8px;
@@ -181,28 +167,28 @@
       background: rgba(47,128,237,0.15);
       color: var(--accent-blue);
       border: 1px solid rgba(47,128,237,0.3);
+      margin-bottom: 8px;
     }
 
-    /* 长跑横幅 */
-    .evolve-banner {
-      background: rgba(245,166,35,0.15);
-      border: 1px solid rgba(245,166,35,0.3);
-      color: var(--accent-amber);
-      font-size: 11px;
+    /* 快捷注入探针指引 */
+    .probe-guide {
+      font-size: 10px;
+      color: var(--text-sub);
+      text-align: center;
+      line-height: 1.4;
+      background: rgba(255,255,255,0.03);
       padding: 6px;
       border-radius: 6px;
-      margin-bottom: 8px;
-      text-align: center;
-      display: none;
+      cursor: pointer;
     }
+    .probe-guide:hover { color: var(--accent-blue); }
   </style>
 </head>
 <body>
 
   <!-- 收起态：悬浮球 (点击展开) -->
   <div id="float-ball" onclick="toggleExpand(true)">
-    <div id="evolve-badge"></div>
-    <div id="ball-timer">180s</div>
+    <div id="ball-timer">02:59</div>
     <div id="ball-signal" class="sig-call">CALL ↑</div>
   </div>
 
@@ -211,21 +197,16 @@
     <div class="header-bar">
       <div class="title">
         Gate 实时决策弹窗
-        <span class="badge-tag">v3.0 置顶</span>
+        <span class="badge-tag">v3.1 置顶</span>
       </div>
       <button class="btn-minimize" onclick="toggleExpand(false)" title="收起">✕</button>
-    </div>
-
-    <!-- 自动长跑进行中提示 -->
-    <div id="panel-evolve-banner" class="evolve-banner">
-      ⚡ 自动验证长跑中 · 滚动样本外命中率: <span id="evolve-acc">83.5%</span>
     </div>
 
     <!-- 顶部倒计时条与 T_early / T_cutoff 标线 -->
     <div class="timing-container">
       <div class="timing-header">
-        <span>当前期号: <strong id="period-display" style="color:var(--text-main)">--</strong></span>
-        <span>剩余: <span class="timing-sec" id="timer-sec">--</span>s</span>
+        <span>当前局: <strong id="period-display" style="color:var(--text-main)">14:40-14:45</strong></span>
+        <span>倒计时: <span class="timing-sec" id="timer-sec">02:59</span></span>
       </div>
       <div class="progress-bar-bg">
         <div class="marker-early" title="T_early: 60s 最早出手"></div>
@@ -234,55 +215,99 @@
       </div>
       <div class="timing-legend">
         <span>0s 开盘</span>
-        <span style="color:var(--accent-amber)">T_early 60s</span>
-        <span style="color:var(--accent-red)">T_cutoff 270s</span>
+        <span style="color:var(--accent-amber)">T_early (60s)</span>
+        <span style="color:var(--accent-red)">T_cutoff (270s)</span>
         <span>300s 结算</span>
       </div>
     </div>
 
-    <!-- 双标的 mini 盘口 -->
-    <div class="mini-charts">
-      <div class="mini-card">
-        <div class="mini-title">
-          <span>BTC 倍率差</span>
-          <span id="btc-price">--</span>
+    <!-- BTC 与 ETH 现场盘面对照 (100% 对应页面真实结构) -->
+    <div class="dual-cards">
+      <!-- BTC 卡片 -->
+      <div class="sym-card">
+        <div class="sym-title">
+          <span>BTC 5分钟</span>
+          <span style="color:var(--accent-green)" id="btc-price-diff">+13.59</span>
         </div>
-        <div class="mini-diff" id="btc-diff">--</div>
+        <div class="sym-row">
+          <span>目标价:</span>
+          <span class="sym-val" id="btc-target">83,008.45</span>
+        </div>
+        <div class="sym-row">
+          <span>当前价:</span>
+          <span class="sym-val" id="btc-current">83,022.04</span>
+        </div>
+        <div class="sym-row">
+          <span>看涨 / 看跌:</span>
+          <span><strong style="color:var(--accent-green)" id="btc-call">0.98</strong> / <strong style="color:var(--accent-red)" id="btc-put">0.03</strong></span>
+        </div>
+        <div class="sym-row">
+          <span>多空配比:</span>
+          <span class="sym-val" id="btc-ratio">B 68.27%</span>
+        </div>
+        <div class="sym-ratio-bar">
+          <div class="sym-ratio-fill" id="btc-ratio-bar" style="width: 68%;"></div>
+        </div>
       </div>
-      <div class="mini-card">
-        <div class="mini-title">
-          <span>ETH 倍率差</span>
-          <span id="eth-price">--</span>
+
+      <!-- ETH 卡片 -->
+      <div class="sym-card">
+        <div class="sym-title">
+          <span>ETH 5分钟</span>
+          <span style="color:var(--accent-green)" id="eth-price-diff">+0.07</span>
         </div>
-        <div class="mini-diff" id="eth-diff">--</div>
+        <div class="sym-row">
+          <span>目标价:</span>
+          <span class="sym-val" id="eth-target">2,502.24</span>
+        </div>
+        <div class="sym-row">
+          <span>当前价:</span>
+          <span class="sym-val" id="eth-current">2,502.31</span>
+        </div>
+        <div class="sym-row">
+          <span>看涨 / 看跌:</span>
+          <span><strong style="color:var(--accent-green)" id="eth-call">0.78</strong> / <strong style="color:var(--accent-red)" id="eth-put">0.23</strong></span>
+        </div>
+        <div class="sym-row">
+          <span>多空配比:</span>
+          <span class="sym-val" id="eth-ratio">B 34.07%</span>
+        </div>
+        <div class="sym-ratio-bar">
+          <div class="sym-ratio-fill" id="eth-ratio-bar" style="width: 34%;"></div>
+        </div>
       </div>
     </div>
 
     <!-- 预测结论大卡片 -->
     <div class="signal-card" id="main-signal-card">
       <div class="signal-action sig-call" id="signal-action">CALL 看涨 ↑</div>
-      <div class="signal-conf">校准后置信度: <span id="signal-conf">83.5%</span> (门槛: ≥80.0%)</div>
+      <div class="signal-conf">校准后置信度: <span id="signal-conf">84.5%</span> (门槛: ≥80.0%)</div>
     </div>
 
     <!-- 依据与联动状态 Top3 -->
     <div class="basis-box">
       <div class="basis-item" style="margin-bottom:4px;">
         <span>双标的联动状态</span>
-        <strong id="cross-status" style="color:var(--accent-blue)">同向跟随 (CO_DIRECTIONAL)</strong>
+        <strong id="cross-status" style="color:var(--accent-blue)">同向共振 (BTC领涨·ETH跟随)</strong>
       </div>
       <div class="basis-item">
-        <span class="basis-name">1. 尾盘资金涌入看涨 (信誉分 88)</span>
-        <span>胜率 82.4%</span>
+        <span class="basis-name">1. BTC尾盘抢筹(看涨0.98/买盘68%)</span>
+        <span>信誉 88 · 胜率 82.4%</span>
       </div>
       <div class="basis-item">
-        <span class="basis-name">2. ETH 滞后4秒同向确认 (信誉分 84)</span>
-        <span>胜率 80.8%</span>
+        <span class="basis-name">2. ETH同向突破目标价(+0.07)</span>
+        <span>信誉 84 · 胜率 80.8%</span>
       </div>
     </div>
 
     <!-- 操作建议 -->
     <div class="advice-bar" id="advice-text">
-      建议操作: 跟投看涨 (建议档位: 高置信 83%)
+      建议操作: 跟投看涨 (建议档位: 高置信 84%)
+    </div>
+
+    <!-- 复制现场探针代码提示 -->
+    <div class="probe-guide" onclick="copyProbeCode()" title="点击复制实时探针脚本，在Gate页面F12粘贴即可自动同步">
+      💡 点击复制现场探针命令 (在Gate页面F12控制台粘贴即可自动回传现场数据)
     </div>
   </div>
 
@@ -302,37 +327,35 @@
       }
     }
 
-    // 连接后端 WebSocket 增量包
+    const wsHost = window.location.host || "127.0.0.1:8099";
     const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProto}//${window.location.host}/ws/live`;
+    const wsUrl = `${wsProto}//${wsHost}/ws/live`;
     let socket;
 
     function connectWs() {
       socket = new WebSocket(wsUrl);
-      socket.onopen = () => console.log("决策弹窗已直连 WebSocket 增量通道");
       socket.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
           updateUI(msg);
-        } catch (e) {
-          console.error("解析消息失败", e);
-        }
+        } catch (e) {}
       };
-      socket.onclose = () => {
-        setTimeout(connectWs, 2000); // 自动重连
-      };
+      socket.onclose = () => setTimeout(connectWs, 2000);
     }
     connectWs();
 
     function updateUI(data) {
       if (!data) return;
-      const sec = data.remaining_sec || 0;
-      const offset = 300 - sec;
-      const sig = data.signal || {};
+      const sec = data.remaining_sec || 179;
+      const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+      const ss = String(sec % 60).padStart(2, '0');
+      const timeStr = `${mm}:${ss}`;
 
       // 更新悬浮球
-      document.getElementById("ball-timer").innerText = `${sec}s`;
+      document.getElementById("ball-timer").innerText = timeStr;
       const ballSig = document.getElementById("ball-signal");
+      const sig = data.signal || {};
+
       if (sig.action === "CALL") {
         ballSig.innerText = "CALL ↑";
         ballSig.className = "sig-call";
@@ -345,24 +368,49 @@
       }
 
       // 更新展开面板
-      document.getElementById("period-display").innerText = data.period_id || "--";
-      document.getElementById("timer-sec").innerText = sec;
-      const pct = Math.min(100, Math.max(0, (offset / 300) * 100));
+      document.getElementById("timer-sec").innerText = timeStr;
+      const pct = Math.min(100, Math.max(0, ((300 - sec) / 300) * 100));
       document.getElementById("timer-progress").style.width = `${pct}%`;
 
-      // 更新盘口
+      // 更新 BTC
       if (data.btc) {
-        document.getElementById("btc-diff").innerText = data.btc.odds_diff;
-        document.getElementById("btc-diff").style.color = data.btc.odds_diff < 0 ? "var(--accent-green)" : "var(--accent-red)";
-        document.getElementById("btc-price").innerText = `$${data.btc.price}`;
-      }
-      if (data.eth) {
-        document.getElementById("eth-diff").innerText = data.eth.odds_diff;
-        document.getElementById("eth-diff").style.color = data.eth.odds_diff < 0 ? "var(--accent-green)" : "var(--accent-red)";
-        document.getElementById("eth-price").innerText = `$${data.eth.price}`;
+        if (data.btc.target_price) document.getElementById("btc-target").innerText = data.btc.target_price.toLocaleString();
+        if (data.btc.current_price) document.getElementById("btc-current").innerText = data.btc.current_price.toLocaleString();
+        if (data.btc.price_diff !== undefined) {
+          const diffEl = document.getElementById("btc-price-diff");
+          diffEl.innerText = (data.btc.price_diff >= 0 ? "+" : "") + data.btc.price_diff;
+          diffEl.style.color = data.btc.price_diff >= 0 ? "var(--accent-green)" : "var(--accent-red)";
+        }
+        if (data.btc.call_price !== undefined) document.getElementById("btc-call").innerText = data.btc.call_price;
+        if (data.btc.put_price !== undefined) document.getElementById("btc-put").innerText = data.btc.put_price;
+        if (data.btc.b_ratio !== undefined) {
+          const rText = typeof data.btc.b_ratio === "number" ? `B ${(data.btc.b_ratio * 100).toFixed(2)}%` : data.btc.b_ratio;
+          document.getElementById("btc-ratio").innerText = rText;
+          const rVal = typeof data.btc.b_ratio === "number" ? (data.btc.b_ratio * 100) : parseFloat(rText.replace(/[^\d.]/g, ''));
+          document.getElementById("btc-ratio-bar").style.width = `${rVal}%`;
+        }
       }
 
-      // 更新信号卡
+      // 更新 ETH
+      if (data.eth) {
+        if (data.eth.target_price) document.getElementById("eth-target").innerText = data.eth.target_price.toLocaleString();
+        if (data.eth.current_price) document.getElementById("eth-current").innerText = data.eth.current_price.toLocaleString();
+        if (data.eth.price_diff !== undefined) {
+          const diffEl = document.getElementById("eth-price-diff");
+          diffEl.innerText = (data.eth.price_diff >= 0 ? "+" : "") + data.eth.price_diff;
+          diffEl.style.color = data.eth.price_diff >= 0 ? "var(--accent-green)" : "var(--accent-red)";
+        }
+        if (data.eth.call_price !== undefined) document.getElementById("eth-call").innerText = data.eth.call_price;
+        if (data.eth.put_price !== undefined) document.getElementById("eth-put").innerText = data.eth.put_price;
+        if (data.eth.b_ratio !== undefined) {
+          const rText = typeof data.eth.b_ratio === "number" ? `B ${(data.eth.b_ratio * 100).toFixed(2)}%` : data.eth.b_ratio;
+          document.getElementById("eth-ratio").innerText = rText;
+          const rVal = typeof data.eth.b_ratio === "number" ? (data.eth.b_ratio * 100) : parseFloat(rText.replace(/[^\d.]/g, ''));
+          document.getElementById("eth-ratio-bar").style.width = `${rVal}%`;
+        }
+      }
+
+      // 信号卡
       const sigActionEl = document.getElementById("signal-action");
       const cardEl = document.getElementById("main-signal-card");
       const confVal = sig.calibrated_conf ? (sig.calibrated_conf * 100).toFixed(1) : "0.0";
@@ -382,7 +430,14 @@
         cardEl.style.borderColor = "var(--card-border)";
       }
 
-      document.getElementById("advice-text").innerText = sig.advice || "正在观察盘面资金博弈...";
+      document.getElementById("advice-text").innerText = sig.advice || "正在观察双标的盘口与博弈...";
+    }
+
+    function copyProbeCode() {
+      const code = "fetch('http://127.0.0.1:8099/static/gate_agent_probe.js').then(r=>r.text()).then(eval)";
+      navigator.clipboard.writeText(code).then(() => {
+        alert("已复制探针注入代码！\n\n请在当前 Gate 交易页面按下 F12 打开开发者工具，在 Console (控制台) 中粘贴回车即可！");
+      });
     }
   </script>
 </body>
