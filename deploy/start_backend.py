@@ -11,6 +11,11 @@ import sys
 import json
 import socket
 from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from backend.app.config import settings
 
 def find_available_port(host: str, start_port: int, max_attempts: int = 50) -> int:
