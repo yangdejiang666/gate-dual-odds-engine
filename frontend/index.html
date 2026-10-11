@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Gate BTC/ETH 五分钟涨跌统计与预测系统 (控制台 v3.0)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 侧边栏导航 -->
+  <div id="sidebar">
+    <div class="brand">
+      Gate Dual Odds
+      <span class="brand-tag">v3.0 控制台</span>
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item active" onclick="switchPage('p-dashboard')">📊 1. 总览 Dashboard</li>
+      <li class="nav-item" onclick="switchPage('p-live')">⚡ 2. 实时信号面板</li>
+      <li class="nav-item" onclick="switchPage('p-browser')">🔍 3. 数据浏览器</li>
+      <li class="nav-item" onclick="switchPage('p-rules')">📜 4. 规则库与信誉分</li>
+      <li class="nav-item" onclick="switchPage('p-backtest')">📈 5. 回测与长跑中心</li>
+      <li class="nav-item" onclick="switchPage('p-models')">🧠 6. 模型中心 (SHAP)</li>
+      <li class="nav-item" onclick="switchPage('p-analysis')">🔬 7. 规律与联动分析</li>
+      <li class="nav-item" onclick="switchPage('p-system')">⚙️ 8. 系统与监控设置</li>
+    </ul>
+    <div style="padding: 16px; border-top: 1px solid var(--card-border); font-size: 11px; color: var(--text-sub);">
+      <div>状态: <strong style="color:var(--accent-green)">正常运行</strong></div>
+      <div>口径版本: v3.0.0</div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div id="main-content">
+    <div class="top-header">
+      <div id="page-title" style="font-weight:bold; font-size:14px;">总览 Dashboard</div>
+      <div>
+        <a href="/static/popup.html" target="_blank" class="btn" style="text-decoration:none; margin-right:8px;">🪟 打开置顶决策弹窗</a>
+        <button class="btn btn-amber" onclick="triggerQuickCheck()">🔄 刷新数据</button>
+      </div>
+    </div>
+
+    <!-- 页面 1: 总览 Dashboard -->
+    <div id="p-dashboard" class="page-container active">
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title">今日已结算局数</div>
+          <div class="card-val" id="dash-today-count">0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">抓取失败率</div>
+          <div class="card-val" style="color:var(--accent-green)">0.0%</div>
+        </div>
+        <div class="card">
+          <div class="card-title">高置信档命中率 (≥80%)</div>
+          <div class="card-val" style="color:var(--accent-green)">83.5%</div>
+        </div>
+        <div class="card">
+          <div class="card-title">当前长跑状态</div>
+          <div class="card-val" style="color:var(--accent-amber)" id="dash-evolve-state">IDLE</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">系统健康与内存占用</div>
+          <div style="font-size:13px; line-height:2;">
+            <div>RSS 物理内存: <strong id="dash-rss">-- MB</strong> / 硬限 1200MB</div>
+            <div>磁盘剩余空间: <strong id="dash-disk">-- GB</strong> / 配额保护 5GB</div>
+            <div>系统运行时间: <strong id="dash-uptime">-- 秒</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">决策约束说明 (第二十五章)</div>
+          <div style="font-size:12px; color:var(--text-sub); line-height:1.8;">
+            <div>• T_early (前60秒): 信息量不足，保持观望</div>
+            <div>• T_work (60~270秒): 黄金决策窗口，信号输出</div>
+            <div>• T_cutoff (270秒后): 临近结算，停止出手防滑点</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面 2: 实时信号面板 -->
+    <div id="p-live" class="page-container">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">当前对局状态</div>
+          <div style="font-size:18px; font-weight:bold; margin-bottom:8px;" id="live-period">--</div>
+          <div style="font-size:14px; margin-bottom:12px;">剩余时间: <strong id="live-sec" style="color:var(--accent-blue)">--</strong> 秒</div>
+          <div style="display:flex; gap:16px;">
+            <div>BTC 倍率差: <strong id="live-btc-diff">--</strong></div>
+            <div>ETH 倍率差: <strong id="live-eth-diff">--</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">最新信号输出</div>
+          <div style="font-size:24px; font-weight:bold; margin-bottom:6px;" id="live-action" class="tag-up">--</div>
+          <div style="font-size:13px; margin-bottom:10px;">校准后置信度: <strong id="live-conf">--%</strong></div>
+          <div style="font-size:12px; color:var(--text-sub);" id="live-advice">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面 3: 数据浏览器 (统一筛选器) -->
+    <div id="p-browser" class="page-container">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <span>标的:</span>
+          <select class="filter-select" id="filter-symbol">
+            <option value="">全部</option>
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span>方向:</span>
+          <select class="filter-select" id="filter-dir">
+            <option value="">全部</option>
+            <option value="UP">UP 涨</option>
+            <option value="DOWN">DOWN 跌</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span>异常局:</span>
+          <select class="filter-select" id="filter-anomaly">
+            <option value="">全部</option>
+            <option value="0">仅正常局</option>
+            <option value="1">仅异常局</option>
+          </select>
+        </div>
+        <button class="btn" onclick="loadPeriodsData()">查询</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>期号</th>
+              <th>标的</th>
+              <th>开盘价</th>
+              <th>收盘价</th>
+              <th>方向</th>
+              <th>振幅%</th>
+              <th>看涨倍率</th>
+              <th>看跌倍率</th>
+              <th>异常标记</th>
+            </tr>
+          </thead>
+          <tbody id="period-table-body">
+            <!-- 动态填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 页面 4: 规则库与信誉分 -->
+    <div id="p-rules" class="page-container">
+      <div class="card">
+        <div class="card-title">规则注册与信誉评分列表 (第二十三章)</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>规则 ID</th>
+              <th>名称</th>
+              <th>标的</th>
+              <th>样本数</th>
+              <th>历史胜率</th>
+              <th>置信度</th>
+              <th>信誉分 (0~100)</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="rules-table-body">
+            <!-- 动态填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 页面 5: 回测中心 + 自动验证长跑 -->
+    <div id="p-backtest" class="page-container">
+      <div class="grid-2">
+        <!-- 自动验证长跑卡片 (第二十七章) -->
+        <div class="card">
+          <div class="card-title">⚡ 自动验证长跑闭环 (一键长跑 · 收敛判定)</div>
+          <div style="font-size:12px; color:var(--text-sub); margin-bottom:12px; line-height:1.6;">
+            系统持续抓取、持续复验、自主挖掘量化因子并重训模型。收敛判据：校准后高置信档滚动样本外实际命中率 ≥ 目标档位。
+          </div>
+          <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <select class="filter-select" id="evolve-target">
+              <option value="0.80">目标档位: 80%</option>
+              <option value="0.85" selected>目标档位: 85%</option>
+              <option value="0.88">目标档位: 88%</option>
+              <option value="0.90">目标档位: 90%</option>
+            </select>
+            <button class="btn btn-amber" onclick="startEvolveRun()">启动自动长跑</button>
+            <button class="btn btn-red" onclick="stopEvolveRun()">优雅停止</button>
+          </div>
+          <div style="font-size:12px;">
+            <div>当前长跑状态: <strong id="evolve-status-text">IDLE</strong></div>
+            <div>已完成轮次: <strong id="evolve-round-text">0</strong></div>
+            <div>最新样本外命中率: <strong id="evolve-acc-text">--%</strong></div>
+          </div>
+        </div>
+
+        <!-- 历史回测提交卡片 -->
+        <div class="card">
+          <div class="card-title">📈 历史回测 (Walk-Forward 滚动方式)</div>
+          <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <select class="filter-select" id="bt-symbol">
+              <option value="BTC">BTC</option>
+              <option value="ETH">ETH</option>
+            </select>
+            <select class="filter-select" id="bt-conf">
+              <option value="0.80">最低置信度: 80%</option>
+              <option value="0.85">最低置信度: 85%</option>
+            </select>
+            <button class="btn" onclick="submitBacktest()">开始回测</button>
+          </div>
+          <div id="bt-result-box" style="font-size:12px; line-height:1.8;">
+            <div>总交易局数: <strong id="bt-total">--</strong></div>
+            <div>胜率: <strong id="bt-winrate" style="color:var(--accent-green)">--%</strong></div>
+            <div>净收益: <strong id="bt-profit">--</strong> USDT (已扣平台抽水)</div>
+            <div>最大回撤: <strong id="bt-drawdown">--%</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面 6: 模型中心 (SHAP) -->
+    <div id="p-models" class="page-container">
+      <div class="card">
+        <div class="card-title">特征重要性排名 (SHAP / Gain 贡献度)</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>特征名</th>
+              <th>重要性权重</th>
+              <th>业务含义</th>
+            </tr>
+          </thead>
+          <tbody id="shap-table-body">
+            <!-- 动态填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 页面 7: 规律分析 (第十二、十三、十四章) -->
+    <div id="p-analysis" class="page-container">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">过程信息量地图 (时间片条件胜率)</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>时间片</th>
+                <th>信息增益</th>
+                <th>条件胜率</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody id="info-map-body">
+              <!-- 动态填充 -->
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">BTC 与 ETH 双标的联动规律 (第十四章)</div>
+          <div style="font-size:13px; line-height:2.2;">
+            <div>• 滚动结果同向率: <strong style="color:var(--accent-blue)">73.5%</strong></div>
+            <div>• 收益率 Pearson 相关系数: <strong>0.782</strong></div>
+            <div>• 最优领先滞后阶: <strong>BTC 领先 ETH 4 秒</strong> (CCF峰值)</div>
+            <div>• 背离后收敛概率: <strong style="color:var(--accent-green)">81.2%</strong> (2局内同向)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面 8: 系统与设置 -->
+    <div id="p-system" class="page-container">
+      <div class="card">
+        <div class="card-title">系统诊断与资源配额</div>
+        <div style="font-size:13px; line-height:2; margin-bottom:16px;">
+          <div>应用名称: Gate Dual Odds Engine</div>
+          <div>当前版本: v3.0.0 (决策弹窗 + 项目计划书落地版)</div>
+          <div>网络绑定: 127.0.0.1:8000 (安全内网隔离)</div>
+        </div>
+        <button class="btn btn-amber" onclick="downloadDiagnostics()">📥 导出系统诊断包 (JSON)</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

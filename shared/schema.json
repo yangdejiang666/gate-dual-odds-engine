@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GateDualOddsEngineDataSchema",
+  "version": "3.0.0",
+  "definitions": {
+    "PeriodResult": {
+      "type": "object",
+      "properties": {
+        "period_id": { "type": "string" },
+        "symbol": { "type": "string", "enum": ["BTC", "ETH"] },
+        "open_time": { "type": "string", "format": "date-time" },
+        "close_time": { "type": "string", "format": "date-time" },
+        "open_price": { "type": "number" },
+        "close_price": { "type": "number" },
+        "direction": { "type": "string", "enum": ["UP", "DOWN", "FLAT"] },
+        "amplitude_pct": { "type": "number" },
+        "final_up_odds": { "type": "number" },
+        "final_down_odds": { "type": "number" },
+        "is_anomaly": { "type": "boolean" },
+        "anomaly_type": { "type": "string" }
+      },
+      "required": ["period_id", "symbol", "direction", "open_price", "close_price"]
+    },
+    "OddsTick": {
+      "type": "object",
+      "properties": {
+        "period_id": { "type": "string" },
+        "symbol": { "type": "string", "enum": ["BTC", "ETH"] },
+        "sec_offset": { "type": "integer", "minimum": 0, "maximum": 300 },
+        "up_odds": { "type": "number" },
+        "down_odds": { "type": "number" },
+        "odds_diff": { "type": "number" },
+        "price": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["period_id", "symbol", "sec_offset", "up_odds", "down_odds", "odds_diff"]
+    },
+    "SignalOutput": {
+      "type": "object",
+      "properties": {
+        "signal_id": { "type": "string" },
+        "period_id": { "type": "string" },
+        "symbol": { "type": "string", "enum": ["BTC", "ETH"] },
+        "action": { "type": "string", "enum": ["CALL", "PUT", "STAND_BY"] },
+        "raw_prob": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "calibrated_conf": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "rule_hits": { "type": "array", "items": { "type": "string" } },
+        "cross_state": { "type": "string", "enum": ["CO_DIRECTIONAL", "LEAD_LAG", "DIVERGENT", "UNKNOWN"] },
+        "advice": { "type": "string" },
+        "decision_sec_offset": { "type": "integer" }
+      },
+      "required": ["period_id", "symbol", "action", "calibrated_conf"]
+    }
+  }
+}

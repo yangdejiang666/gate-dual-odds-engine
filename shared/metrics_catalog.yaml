@@ -1,0 +1,85 @@
+# Gate BTC/ETH 五分钟涨跌统计与预测系统 - 口径契约与数据字典
+metric_version: "v3.0.0"
+updated_at: "2026-10-11T12:00:00Z"
+description: "前后端及模型训练统一口径契约，杜绝未来函数与口径漂移"
+
+symbols:
+  - symbol: "BTC"
+    name: "Bitcoin 5-Min Dual Odds"
+    tick_size: 0.1
+    default_p_up_baseline: 0.505 # 历史涨基线
+  - symbol: "ETH"
+    name: "Ethereum 5-Min Dual Odds"
+    tick_size: 0.01
+    default_p_up_baseline: 0.498 # 历史涨基线
+
+state_machine:
+  states:
+    - code: 0
+      name: "WAITING"
+      description: "上一局已结算，等待新局开盘"
+    - code: 1
+      name: "RUNNING"
+      description: "倒计时进行中，倍率与曲线持续采集"
+    - code: 2
+      name: "SETTLING"
+      description: "倒计时归零，等待平台出结果"
+    - code: 3
+      name: "RESULT"
+      description: "结果落地，写入结果表"
+
+confidence_bins:
+  - bin_id: "bin_80_85"
+    name: "80% ~ 85%"
+    min_conf: 0.80
+    max_conf: 0.85
+    min_sample_threshold: 200
+  - bin_id: "bin_85_90"
+    name: "85% ~ 90%"
+    min_conf: 0.85
+    max_conf: 0.90
+    min_sample_threshold: 150
+  - bin_id: "bin_90_plus"
+    name: "90%+"
+    min_conf: 0.90
+    max_conf: 1.00
+    min_sample_threshold: 100
+
+decision_timing:
+  t_early_sec: 60     # 最早可出手秒数（开局前60秒多为噪声，只观察不出手）
+  t_work_min_sec: 60  # 工作区间起点
+  t_work_max_sec: 270 # 工作区间终点（最后30秒前）
+  t_cutoff_sec: 270   # 决策截止线，晚于此一律观望防滑点追单
+
+reputation_scoring:
+  baseline_weight: 0.30
+  ewma_weight: 0.35
+  sample_shrinkage_weight: 0.15
+  calibration_penalty_weight: 0.10
+  consecutive_loss_penalty_weight: 0.10
+  disable_threshold: 45.0 # 信誉分低于45自动停用规则
+  consecutive_fail_limit: 4 # 连续4次错误触发临时熔断
+
+anomaly_types:
+  - code: 1
+    name: "PASSIVE_PUMP_DUMP"
+    description: "单边被动上涨/拉盘砸盘，几乎无反转"
+  - code: 2
+    name: "SPIKE_PIN"
+    description: "插针行情，极短时间极端价后迅速回归"
+  - code: 3
+    name: "ODDS_EXTREME_JUMP"
+    description: "倍率极端跳变或归零式塌陷"
+  - code: 4
+    name: "MARKET_SILENCE"
+    description: "无行情静默，价格与倍率全程不动"
+  - code: 5
+    name: "CROSS_ISOLATED_ANOMALY"
+    description: "跨标的孤立异动，单边剧烈而对手平静"
+
+evolve_guardrails:
+  target_confidence_ladder: [0.80, 0.85, 0.88, 0.90]
+  min_eval_samples: 500
+  wilson_alpha: 0.05
+  max_generalization_gap_pp: 5.0 # 泛化差超过5pp直接触发过拟合熔断
+  min_daily_action_rate: 2.0     # 日均出手数下限
