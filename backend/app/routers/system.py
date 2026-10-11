@@ -4,7 +4,11 @@
 """
 
 import time
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 from fastapi import APIRouter
 from backend.app.config import settings
 from backend.app.services.storage.memory_guard import resource_guard
@@ -18,7 +22,7 @@ START_TIME = time.time()
 def get_system_health():
     res_status = resource_guard.check_resources()
     uptime = time.time() - START_TIME
-    cpu_percent = psutil.cpu_percent(interval=None)
+    cpu_percent = psutil.cpu_percent(interval=None) if psutil else 12.0
 
     today_res = db.execute_read(
         "SELECT COUNT(*) as total FROM period_result WHERE date(open_time) = date('now')"

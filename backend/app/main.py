@@ -56,7 +56,7 @@ if frontend_dir.exists():
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info(f"🚀 {settings.APP_NAME} v{settings.VERSION} 正在启动...")
+    logger.info(f"[LAUNCH] {settings.APP_NAME} v{settings.VERSION} Starting...")
     # 启动看门狗后台巡检协程
     asyncio.create_task(system_watchdog.start_monitor())
     # 启动后台实时模拟广播 (确保弹窗与控制台即使脱机也有真实增量流可看)

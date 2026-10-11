@@ -16,8 +16,8 @@ try:
     class SystemSettings(BaseSettings):
         APP_NAME: str = "Gate Dual Odds Engine"
         VERSION: str = "3.0.0"
-        HOST: str = "127.0.0.1"  # 严格默认仅本机监听
-        PORT: int = 8000
+        HOST: str = os.getenv("HOST", "127.0.0.1")  # 严格默认仅本机监听
+        PORT: int = int(os.getenv("PORT", 8099))
         DEBUG: bool = False
         
         DATA_DIR: Path = BASE_DIR / "data"
@@ -80,8 +80,8 @@ except ImportError:
     class SystemSettingsFallback:
         APP_NAME: str = "Gate Dual Odds Engine"
         VERSION: str = "3.0.0"
-        HOST: str = "127.0.0.1"
-        PORT: int = 8000
+        HOST: str = os.getenv("HOST", "127.0.0.1")
+        PORT: int = int(os.getenv("PORT", 8099))
         DEBUG: bool = False
         
         DATA_DIR: Path = BASE_DIR / "data"

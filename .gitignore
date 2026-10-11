@@ -47,6 +47,7 @@ data/sqlite/*.db-wal
 data/sqlite/*.db-shm
 data/snapshots/*.png
 data/reports/*.pdf
+data/active_port.txt
 
 # Logs
 logs/

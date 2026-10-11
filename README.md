@@ -229,7 +229,7 @@ deploy\start_all.bat
 ```
 脚本将自动完成：
 1. 检查并初始化 SQLite WAL 本地数据库；
-2. 启动 FastAPI + WebSocket 后端服务 (`http://127.0.0.1:8000`)；
+2. 启动 FastAPI + WebSocket 后端服务 (`http://127.0.0.1:8099`，支持自动端口探测自愈)；
 3. 唤起置顶决策悬浮弹窗。
 
 ### 7.4 运行单元测试套件
